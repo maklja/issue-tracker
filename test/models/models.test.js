@@ -33,7 +33,7 @@ describe('User model test', () => {
 	it('save new user to database successfully', done => {
 		const password = 'test1234';
 		const newUser = new User({
-			email: 'test@gmail.com',
+			username: 'test@gmail.com',
 			password,
 			firstName: 'TestFirstName',
 			lastName: 'TestLastName'
