@@ -3,22 +3,21 @@ const passport = require('passport');
 
 const router = express.Router();
 const User = require('../model/User');
-const {
-	ensureAuthenticated,
-	ensureNotAuthenticated
-} = require('./middlewares');
+const { ensureNotAuthenticated } = require('./middlewares');
 
 router.get('/init', (req, resp) => {
 	const { user } = req;
 	if (user) {
 		// return user information if user is logged in
-		resp.send({
+		resp.json({
 			user: {
-				username: user.username
+				_id: user._id,
+				username: user.username,
+				admin: user.admin
 			}
 		});
 	} else {
-		resp.send({
+		resp.json({
 			user: null
 		});
 	}
@@ -33,7 +32,7 @@ router.post('/login', ensureNotAuthenticated, (req, res, next) => {
 		// if login in not successful just return null to client as
 		// indicator that login failed
 		if (!user) {
-			return res.send({
+			return res.json({
 				user: null
 			});
 		}
@@ -44,12 +43,14 @@ router.post('/login', ensureNotAuthenticated, (req, res, next) => {
 				return next(err);
 			}
 
-			const { username } = user;
+			const { _id, username, admin } = user;
 
 			// send user data to the client
-			return res.send({
+			return res.json({
 				user: {
-					username
+					_id,
+					username,
+					admin
 				}
 			});
 		});
@@ -58,7 +59,7 @@ router.post('/login', ensureNotAuthenticated, (req, res, next) => {
 
 router.post('/logout', (req, res) => {
 	req.logout(); // delete session
-	res.status(204).send(); // sent just confirmed status code without body
+	res.status(204).json(); // sent just confirmed status code without body
 });
 
 router.post('/register', ensureNotAuthenticated, async (req, resp) => {
@@ -74,7 +75,7 @@ router.post('/register', ensureNotAuthenticated, async (req, resp) => {
 		// check if username is taken
 		const existingUser = await User.findOne({ username });
 		if (existingUser != null) {
-			resp.status(400).send({
+			resp.status(400).json({
 				error: 'USERNAME_TAKEN'
 			});
 			return;
@@ -91,10 +92,10 @@ router.post('/register', ensureNotAuthenticated, async (req, resp) => {
 		// save user to database
 		await user.save();
 
-		resp.status(204).send();
+		resp.status(204).json();
 	} catch (error) {
 		// TODO log error
-		resp.status(500).send({
+		resp.status(500).json({
 			error: 'INTERNAL_ERROR'
 		});
 	}

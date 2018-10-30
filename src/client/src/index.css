@@ -13,11 +13,14 @@ body {
 
 label {
   font-size: 1.8em;
+  display: block;
 }
 
+select,
 input[type=text],
 input[type=password],
-input[type=email] {
+input[type=email],
+textarea {
   width: 100%;
   padding: 12px 20px;
   margin: 8px 0;
@@ -26,6 +29,11 @@ input[type=email] {
   border-radius: 4px;
   box-sizing: border-box;
   font-size: 1.8em;
+}
+
+textarea {
+  resize: none;
+  min-height: 400px;
 }
 
 button {
@@ -39,7 +47,14 @@ button {
   cursor: pointer;
 }
 
-button:hover {
+button[disabled]{
+  border: 1px solid #999999;
+  background-color: #cccccc;
+  color: #666666;
+}
+
+
+button:not([disabled]):hover {
   background-color: #45a049;
 }
 
@@ -66,4 +81,32 @@ li a {
 
 li a:hover {
   background-color: #111;
+}
+
+table {
+  font-size: 1.6em;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+table td, table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+table tr:nth-child(even){
+  background-color: #f2f2f2;
+}
+
+table tr:hover {
+  background-color: #ddd;
+  cursor: pointer;
+}
+
+table th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #4CAF50;
+  color: white;
 }

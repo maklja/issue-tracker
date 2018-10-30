@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { BrowserRouter, Route, Link } from 'react-router-dom';
 
 import HomePage from './view/pages/HomePage';
+import IssueForm from './view/issue/IssueForm';
 import RegisterView from './view/register/RegisterView';
 import LoginView from './view/login/LoginView';
 
@@ -32,7 +33,7 @@ class App extends Component {
 					<div>Loading, please wait...</div>
 				) : (
 					<BrowserRouter>
-						<div>
+						<div className="app">
 							<ul>
 								<li>
 									<Link to="/">Home</Link>
@@ -40,15 +41,9 @@ class App extends Component {
 
 								{user ? (
 									<li>
-										<Link to="/new-issue">New issue</Link>
-									</li>
-								) : (
-									''
-								)}
-
-								{user ? (
-									<li>
-										<Link to="/my-issues">My issues</Link>
+										<Link to="/manage-issue">
+											New issue
+										</Link>
 									</li>
 								) : (
 									''
@@ -86,7 +81,7 @@ class App extends Component {
 									isUserLoggedIn(user) === false ? (
 										<RegisterView />
 									) : (
-										<HomePage />
+										<HomePage user={user} />
 									)
 								}
 							/>
@@ -97,9 +92,22 @@ class App extends Component {
 									isUserLoggedIn(user) === false ? (
 										<LoginView onLogin={this._onLogin} />
 									) : (
-										<HomePage />
+										<HomePage user={user} />
 									)
 								}
+							/>
+
+							<Route
+								exact
+								path="/manage-issue/:id?"
+								render={({ match }) => {
+									const id = match.params.id;
+									return isUserLoggedIn(user) ? (
+										<IssueForm issueId={id} />
+									) : (
+										<HomePage user={user} />
+									);
+								}}
 							/>
 
 							<Route
@@ -110,7 +118,13 @@ class App extends Component {
 								)}
 							/>
 
-							<Route path="/" component={HomePage} exact />
+							<Route
+								path="/"
+								render={() => {
+									return <HomePage user={user} />;
+								}}
+								exact
+							/>
 						</div>
 					</BrowserRouter>
 				)}
@@ -133,10 +147,7 @@ class App extends Component {
 	async componentDidMount() {
 		// send registration request
 		const response = await fetch('/api/init', {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json; charset=utf-8'
-			}
+			method: 'GET'
 		});
 
 		const initData = await response.json();

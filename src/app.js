@@ -7,7 +7,7 @@ const session = require('express-session');
 const passport = require('passport');
 
 const config = require('./conf');
-const { userRoutes } = require('./routes');
+const { userRoutes, issueRoutes, statusRoutes } = require('./routes');
 const { createConnection } = require('./db');
 const setupPassport = require('./utils/setupPassport');
 
@@ -36,7 +36,9 @@ createConnection(config.databaseURL)
 		app.use(passport.session());
 
 		setupPassport();
+		app.use('/api', issueRoutes);
 		app.use('/api', userRoutes);
+		app.use('/api', statusRoutes);
 
 		app.listen(port, () => {
 			// eslint-disable-next-line
