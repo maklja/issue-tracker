@@ -1,17 +1,27 @@
 import { Component } from 'react';
+import { connect } from 'react-redux';
+
+import { logout } from '../../actions/initActions';
 
 class LogoutView extends Component {
 	render() {
 		return '';
 	}
 
-	async componentDidMount() {
-		await fetch('/api/logout', {
-			method: 'POST'
-		});
-
-		this.props.onLogout();
+	componentDidMount() {
+		this.props.logout();
 	}
 }
 
-export default LogoutView;
+const mapDispatchToProps = dispatch => {
+	return {
+		logout: () => {
+			dispatch(logout());
+		}
+	};
+};
+
+export default connect(
+	null,
+	mapDispatchToProps
+)(LogoutView);

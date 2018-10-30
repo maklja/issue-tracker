@@ -1,4 +1,8 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Message } from '../message';
+
+import { login } from '../../actions/initActions';
 
 class LoginView extends Component {
 	constructor(props) {
@@ -6,8 +10,7 @@ class LoginView extends Component {
 
 		this.state = {
 			username: '',
-			password: '',
-			message: ''
+			password: ''
 		};
 
 		this._onSubmit = this._onSubmit.bind(this);
@@ -15,12 +18,14 @@ class LoginView extends Component {
 	}
 
 	render() {
-		const { username, password, message } = this.state;
+		const { username, password } = this.state;
+		const { isDisabled, result } = this.props;
 
 		// TODO client side validation
 		return (
 			<div>
-				<form>
+				<Message {...result} />
+				<form onSubmit={this._onSubmit}>
 					<div>
 						<label>Email</label>
 						<input
@@ -29,7 +34,7 @@ class LoginView extends Component {
 							value={username}
 							placeholder="Enter your email"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -40,12 +45,15 @@ class LoginView extends Component {
 							value={password}
 							placeholder="Enter your password"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
-					<div>{message}</div>
 					<div>
-						<button type="button" onClick={this._onSubmit}>
+						<button
+							type="button"
+							onClick={this._onSubmit}
+							disabled={isDisabled}
+						>
 							Submit
 						</button>
 					</div>
@@ -63,49 +71,29 @@ class LoginView extends Component {
 		});
 	}
 
-	async _onSubmit() {
+	_onSubmit() {
 		const { username, password } = this.state;
 
-		try {
-			// send registration request
-			const response = await fetch('/api/login', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				},
-				body: JSON.stringify({
-					// form data
-					username,
-					password
-				})
-			});
-
-			// extract server response
-			const responseBody = await response.json();
-			const { user } = responseBody;
-
-			if (user != null) {
-				// set message on UI
-				this.setState(
-					{
-						message: ''
-					},
-					() => {
-						this.props.onLogin(user);
-					}
-				);
-			} else {
-				// set message on UI
-				this.setState({
-					message: 'Invalid username or password.'
-				});
-			}
-		} catch (error) {
-			this.setState({
-				message: 'Unable to login, please try again later.'
-			});
-		}
+		this.props.login(username, password);
 	}
 }
 
-export default LoginView;
+const mapStateToProps = state => {
+	const { init } = state;
+	const { result, isLoginStarted } = init;
+
+	return { isDisabled: isLoginStarted, result };
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		login: (username, password) => {
+			dispatch(login(username, password));
+		}
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(LoginView);

@@ -1,4 +1,8 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+
+import { register } from '../../actions/initActions';
+import { Message } from '../message';
 
 class RegisterView extends Component {
 	constructor(props) {
@@ -9,8 +13,7 @@ class RegisterView extends Component {
 			password: '',
 			repeatPassword: '',
 			firstName: '',
-			lastName: '',
-			message: ''
+			lastName: ''
 		};
 
 		this._onSubmit = this._onSubmit.bind(this);
@@ -23,13 +26,19 @@ class RegisterView extends Component {
 			password,
 			repeatPassword,
 			firstName,
-			lastName,
-			message
+			lastName
 		} = this.state;
 
+		const { isDisabled, result } = this.props;
+		const { error: errObj, message } = result;
+		const msg =
+			errObj && errObj.error === 'USERNAME_TAKEN'
+				? 'Username already exits'
+				: message;
 		// TODO client side validation
 		return (
 			<div>
+				<Message {...result} message={msg} />
 				<form>
 					<div>
 						<label>Email</label>
@@ -39,7 +48,7 @@ class RegisterView extends Component {
 							value={username}
 							placeholder="Enter your email"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -50,7 +59,7 @@ class RegisterView extends Component {
 							value={password}
 							placeholder="Enter your password"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -61,7 +70,7 @@ class RegisterView extends Component {
 							value={repeatPassword}
 							placeholder="Repeat your password"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -72,7 +81,7 @@ class RegisterView extends Component {
 							value={firstName}
 							placeholder="Enter first name"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -83,12 +92,15 @@ class RegisterView extends Component {
 							value={lastName}
 							placeholder="Enter last name"
 							onChange={this._onChange}
-							required
+							disabled={isDisabled}
 						/>
 					</div>
-					<div>{message}</div>
 					<div>
-						<button type="button" onClick={this._onSubmit}>
+						<button
+							type="button"
+							disabled={isDisabled}
+							onClick={this._onSubmit}
+						>
 							Submit
 						</button>
 					</div>
@@ -106,7 +118,7 @@ class RegisterView extends Component {
 		});
 	}
 
-	async _onSubmit() {
+	_onSubmit() {
 		const {
 			username,
 			password,
@@ -115,54 +127,36 @@ class RegisterView extends Component {
 			lastName
 		} = this.state;
 
-		try {
-			// send registration request
-			const response = await fetch('/api/register', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				},
-				body: JSON.stringify({
-					// form data
-					username,
-					password,
-					repeatPassword,
-					firstName,
-					lastName
-				})
-			});
-
-			if (response.ok === false) {
-				// extract server response
-				const responseBody = await response.json();
-
-				if (responseBody.error === 'USERNAME_TAKEN') {
-					this.setState({
-						message: `Username ${username} is taken.`
-					});
-				} else {
-					this.setState({
-						message:
-							'Unable to register new account, please try again later.'
-					});
-				}
-			} else {
-				this.setState({
-					message: 'Account is registred.',
-					username: '',
-					password: '',
-					repeatPassword: '',
-					firstName: '',
-					lastName: ''
-				});
-			}
-		} catch (error) {
-			this.setState({
-				message:
-					'Unable to register new account, please try again later.'
-			});
-		}
+		this.props.register({
+			username,
+			password,
+			repeatPassword,
+			firstName,
+			lastName
+		});
 	}
 }
 
-export default RegisterView;
+const mapStateToProps = state => {
+	const { init } = state;
+	const { isRegistrationInProgress, error, result } = init;
+
+	return {
+		isDisabled: isRegistrationInProgress,
+		error,
+		result
+	};
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		register: user => {
+			dispatch(register(user));
+		}
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(RegisterView);

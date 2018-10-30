@@ -1,0 +1,18 @@
+.message {
+    font-size: 2em;
+    margin: 0.1em;
+    text-align: center;
+    border-radius: 1em;
+    overflow: hidden;
+    color: white;
+}
+
+.message .message-ok {
+    padding: 1em;
+    background-color: darkgreen;
+}
+
+.message .message-error {
+    padding: 1em;
+    background-color: crimson;
+}

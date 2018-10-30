@@ -3,7 +3,77 @@ const passport = require('passport');
 
 const router = express.Router();
 const User = require('../model/User');
-const { ensureNotAuthenticated } = require('./middlewares');
+const { ensureNotAuthenticated, ensureIsAdmin } = require('./middlewares');
+
+router.delete('/user', ensureIsAdmin, async (req, resp) => {
+	const { id } = req.body;
+
+	try {
+		// can't delete it own account
+		if (id === req.user._id) {
+			resp.status(400).json({
+				error: 'INVALID_ACCOUNT'
+			});
+			return;
+		}
+		// do a hard delete only
+		await User.deleteOne({ _id: id });
+
+		resp.status(204).send();
+	} catch (error) {
+		// TODO log error
+		resp.status(500).json({
+			error: 'INTERNAL_ERROR'
+		});
+	}
+});
+
+router.post('/activate-user', ensureIsAdmin, async (req, resp) => {
+	const { id } = req.body;
+
+	try {
+		await User.updateOne(
+			{ _id: id },
+			{
+				activated: true
+			}
+		);
+
+		resp.status(204).send();
+	} catch (error) {
+		// TODO log error
+		resp.status(500).json({
+			error: 'INTERNAL_ERROR'
+		});
+	}
+});
+
+router.get('/users', ensureIsAdmin, async (req, resp) => {
+	try {
+		const users = await User.aggregate([
+			{
+				$project: {
+					_id: 1,
+					username: 1,
+					firstName: 1,
+					lastName: 1,
+					createdTimestamp: 1,
+					admin: 1,
+					activated: 1
+				}
+			}
+		])
+			.sort({ createdTimestamp: -1 })
+			.exec();
+
+		resp.json(users);
+	} catch (error) {
+		// TODO log error
+		resp.status(500).json({
+			error: 'INTERNAL_ERROR'
+		});
+	}
+});
 
 router.get('/init', (req, resp) => {
 	const { user } = req;

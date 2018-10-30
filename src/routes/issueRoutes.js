@@ -6,6 +6,95 @@ const Issue = require('../model/Issue');
 const Status = require('../model/Status');
 const { ensureAuthenticated, ensureIsAdmin } = require('./middlewares');
 
+const getIssueQuery = () => {
+	return [
+		// "merge" with status collection
+		{
+			$lookup: {
+				from: 'status',
+				localField: 'status',
+				foreignField: '_id',
+				as: 'status'
+			}
+		},
+		{
+			$lookup: {
+				from: 'users',
+				localField: 'assignTo',
+				foreignField: '_id',
+				as: 'assignTo'
+			}
+		},
+		// "merge" with users collection
+		{
+			$lookup: {
+				from: 'users',
+				localField: 'reportedBy',
+				foreignField: '_id',
+				as: 'reportedBy'
+			}
+		},
+		// create projection to extract specific fields ant to extract
+		// first status and reportedBy form arrays
+		{
+			$project: {
+				_id: 1,
+				title: 1,
+				content: 1,
+				status: { $arrayElemAt: ['$status', 0] },
+				reportedBy: {
+					$arrayElemAt: ['$reportedBy', 0]
+				},
+				assignTo: {
+					$arrayElemAt: ['$assignTo', 0]
+				}
+			}
+		},
+		// final set of fields that we are sending to the client
+		{
+			$project: {
+				_id: 1,
+				title: 1,
+				content: 1,
+				'status._id': 1,
+				'status.name': 1,
+				'reportedBy._id': 1,
+				'reportedBy.username': 1,
+				'reportedBy.firstName': 1,
+				'reportedBy.lastName': 1,
+				'assignTo._id': 1,
+				'assignTo.username': 1,
+				'assignTo.firstName': 1,
+				'assignTo.lastName': 1
+			}
+		}
+	];
+};
+
+router.post('/issue/assign', ensureAuthenticated, async (req, resp) => {
+	const { id } = req.body;
+
+	try {
+		await Issue.updateMany(
+			{ _id: id },
+			{
+				assignTo: req.user._id
+			}
+		);
+
+		const query = getIssueQuery();
+		query.unshift({ $match: { _id: ObjectID(id) } });
+		const issues = await Issue.aggregate(query).exec();
+
+		resp.json(issues[0]);
+	} catch (error) {
+		// TODO log error
+		resp.status(500).json({
+			error: 'INTERNAL_ERROR'
+		});
+	}
+});
+
 router.delete('/issue', ensureIsAdmin, async (req, resp) => {
 	const { _id } = req.body;
 
@@ -60,55 +149,12 @@ router.get('/issue/:id', async (req, resp) => {
 
 router.get('/issues', async (req, resp) => {
 	try {
-		const issues = await Issue.aggregate([
+		const query = getIssueQuery();
+		query.unshift(
 			// exclude ones that are deleted
-			{ $match: { deleted: false } },
-			// "merge" with status collection
-			{
-				$lookup: {
-					from: 'status',
-					localField: 'status',
-					foreignField: '_id',
-					as: 'status'
-				}
-			},
-			// "merge" with users collection
-			{
-				$lookup: {
-					from: 'users',
-					localField: 'reportedBy',
-					foreignField: '_id',
-					as: 'reportedBy'
-				}
-			},
-			// create projection to extract specific fields ant to extract
-			// first status and reportedBy form arrays
-			{
-				$project: {
-					_id: 1,
-					title: 1,
-					content: 1,
-					status: { $arrayElemAt: ['$status', 0] },
-					reportedBy: {
-						$arrayElemAt: ['$reportedBy', 0]
-					}
-				}
-			},
-			// final set of fields that we are sending to the client
-			{
-				$project: {
-					_id: 1,
-					title: 1,
-					content: 1,
-					'status._id': 1,
-					'status.name': 1,
-					'reportedBy._id': 1,
-					'reportedBy.username': 1,
-					'reportedBy.firstName': 1,
-					'reportedBy.lastName': 1
-				}
-			}
-		])
+			{ $match: { deleted: false } }
+		);
+		const issues = await Issue.aggregate(query)
 			.sort({ createdTimestamp: -1 })
 			.exec();
 
@@ -149,14 +195,21 @@ router.post('/save-issue', ensureAuthenticated, async (req, resp) => {
 			title,
 			content,
 			status: status._id,
-			reportedBy: req.user._id
+			reportedBy: req.user._id // TODO security risk on update?
 		});
 
 		await Issue.updateOne({ _id: issue._id }, issue, {
 			upsert: true
 		});
 
-		resp.json(issue);
+		const query = getIssueQuery();
+		query.unshift(
+			// exclude ones that are deleted
+			{ $match: { _id: issue._id } }
+		);
+		const issues = await Issue.aggregate(query).exec();
+
+		resp.json(issues[0]);
 	} catch (error) {
 		// TODO log error
 		resp.status(500).json({

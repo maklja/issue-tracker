@@ -1,42 +1,44 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
+import { Message } from '../message';
+
+import { saveIssue, assignIssue } from '../../actions/issueActions';
 
 class IssueForm extends Component {
 	constructor(props) {
 		super(props);
 
 		const { issue } = props;
-		const { _id, title, content, status } = issue || {
-			_id: null,
-			title: '',
-			content: '',
-			status: null
-		};
+		const { _id, title, content, status } = issue;
 
 		this.state = {
 			_id,
 			title,
 			content,
-			status,
-			message: '',
-			availableStatus: []
+			status
 		};
 
 		this._onSubmit = this._onSubmit.bind(this);
 		this._onChange = this._onChange.bind(this);
+		this._assignIssue = this._assignIssue.bind(this);
 	}
 
 	render() {
+		const { _id, title, content, status } = this.state;
 		const {
-			_id,
-			title,
-			content,
-			status,
-			message,
-			availableStatus
-		} = this.state;
+			statusCollection,
+			isDisabled,
+			issue,
+			result,
+			userId
+		} = this.props;
+
+		const assignToDisabled =
+			userId === (issue && issue.assignTo ? issue.assignTo._id : null);
 		// TODO client side validation
 		return (
 			<div>
+				<Message {...result} />
 				<form>
 					<div>
 						<label>Title</label>
@@ -46,6 +48,7 @@ class IssueForm extends Component {
 							value={title}
 							placeholder="Enter title"
 							onChange={this._onChange}
+							disabled={isDisabled}
 						/>
 					</div>
 					<div>
@@ -54,8 +57,9 @@ class IssueForm extends Component {
 								name="status"
 								defaultValue={status}
 								onChange={this._onChange}
+								disabled={isDisabled}
 							>
-								{availableStatus.map(curStatus => {
+								{statusCollection.map(curStatus => {
 									const { _id, name } = curStatus;
 
 									return (
@@ -69,6 +73,40 @@ class IssueForm extends Component {
 							''
 						)}
 					</div>
+					{_id ? (
+						<div>
+							<label>Create by: </label>
+							<input
+								type="text"
+								value={`${issue.reportedBy.firstName} ${
+									issue.reportedBy.lastName
+								}`}
+								disabled={true}
+							/>
+						</div>
+					) : (
+						''
+					)}
+
+					{_id ? (
+						<div>
+							<label>Assign to: </label>
+							<input
+								type="text"
+								value={
+									issue.assignTo
+										? `${issue.assignTo.firstName} ${
+												issue.assignTo.lastName
+										  }`
+										: 'None'
+								}
+								disabled={true}
+							/>
+						</div>
+					) : (
+						''
+					)}
+
 					<div>
 						<label>Content</label>
 						<textarea
@@ -76,57 +114,38 @@ class IssueForm extends Component {
 							placeholder="Write issue"
 							onChange={this._onChange}
 							value={content}
+							disabled={isDisabled}
 						/>
 					</div>
-					<div>{message}</div>
 					<div>
-						<button type="button" onClick={this._onSubmit}>
+						<button
+							type="button"
+							onClick={this._onSubmit}
+							disabled={isDisabled}
+						>
 							Submit
 						</button>
+						{_id ? (
+							<button
+								type="button"
+								onClick={this._assignIssue}
+								disabled={isDisabled || assignToDisabled}
+							>
+								Assign to me
+							</button>
+						) : (
+							''
+						)}
 					</div>
 				</form>
 			</div>
 		);
 	}
 
-	async componentDidMount() {
-		try {
-			const { issueId } = this.props;
-			let issue = {};
-			// send registration request
-			const statusResponse = await fetch('/api/status', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				}
-			});
+	_assignIssue() {
+		const { _id } = this.state;
 
-			if (issueId) {
-				// send registration request
-				const issueResponse = await fetch(`/api/issue/${issueId}`, {
-					method: 'GET',
-					headers: {
-						'Content-Type': 'application/json; charset=utf-8'
-					}
-				});
-				issue = await issueResponse.json();
-			}
-
-			const statusResponseBody = await statusResponse.json();
-
-			this.setState({
-				availableStatus: statusResponseBody,
-				status:
-					statusResponseBody.length > 0
-						? statusResponseBody[0]._id
-						: null,
-				...issue
-			});
-		} catch (error) {
-			this.setState({
-				message: 'Unable to submit new issue, please try again later.'
-			});
-		}
+		this.props.assignIssue(_id);
 	}
 
 	_onChange(e) {
@@ -138,41 +157,51 @@ class IssueForm extends Component {
 		});
 	}
 
-	async _onSubmit() {
+	_onSubmit() {
 		const { _id, title, content, status } = this.state;
 
-		try {
-			// send registration request
-			const response = await fetch('/api/save-issue', {
-				method: 'POST',
-				body: JSON.stringify({
-					// form data
-					_id,
-					title,
-					content,
-					status
-				})
-			});
-			const responseBody = await response.json();
-
-			if (response.ok === false) {
-				this.setState({
-					message:
-						responseBody.error === 'STATUS_NOT_FOUND'
-							? 'Invalid statis id.'
-							: 'Unable to submit issue to server.'
-				});
-			} else {
-				this.setState({
-					message: 'Issue submitted successfully.'
-				});
-			}
-		} catch (error) {
-			this.setState({
-				message: 'Unable to submit new issue, please try again later.'
-			});
-		}
+		this.props.saveOrUpdateIssue({
+			_id,
+			title,
+			content,
+			status
+		});
 	}
 }
 
-export default IssueForm;
+const mapStateToProps = (state, ownProps) => {
+	const { statusData, issueData, init } = state;
+	const { status } = statusData;
+	const { isLoggedIn, user } = init;
+	const { issues, isSaveInProgress, result } = issueData;
+	const { issueId } = ownProps;
+
+	return {
+		statusCollection: status,
+		isDisabled: isSaveInProgress || !isLoggedIn,
+		issue: issues.find(curIssue => curIssue._id === issueId) || {
+			_id: null,
+			title: '',
+			content: '',
+			status: status[0]
+		},
+		result,
+		userId: user ? user._id : ''
+	};
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		saveOrUpdateIssue(issue) {
+			dispatch(saveIssue(issue));
+		},
+		assignIssue(id) {
+			dispatch(assignIssue(id));
+		}
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(IssueForm);

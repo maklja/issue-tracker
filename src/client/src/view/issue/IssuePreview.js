@@ -1,78 +1,87 @@
 import React, { Component } from 'react';
-import { withRouter } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { connect } from 'react-redux';
+
+import {
+	fetchIssues,
+	archiveIssue,
+	deleteIssue
+} from '../../actions/issueActions';
+import { Message } from '../message';
 
 class IssuePreview extends Component {
-	constructor(props) {
-		super(props);
-
-		this.state = {
-			issues: []
-		};
-
-		this._onSelect = this._onSelect.bind(this);
-		this._onSoftDelete = this._onSoftDelete.bind(this);
-		this._onHardDelete = this._onHardDelete.bind(this);
-	}
-
 	render() {
-		const { issues, message } = this.state;
-		const { user } = this.props;
+		const {
+			issues,
+			isAdmin,
+			userId,
+			archiveIssue,
+			deleteIssue,
+			result
+		} = this.props;
 
 		// TODO client side validation
 		return (
 			<div>
-				<div>{message}</div>
+				<Message {...result} />
 				<table>
 					<thead>
 						<tr>
 							<th>Title</th>
 							<th>Status</th>
 							<th>Reporter</th>
+							<th>Assign to</th>
+							<th />
 						</tr>
 					</thead>
 					<tbody>
 						{issues.map(curIssue => {
+							const {
+								_id,
+								title,
+								status,
+								reportedBy,
+								assignTo
+							} = curIssue;
 							return (
-								<tr
-									key={curIssue._id}
-									onClick={() => this._onSelect(curIssue._id)}
-								>
-									<td>{curIssue.title}</td>
-									<td>{curIssue.status.name}</td>
+								<tr key={_id}>
 									<td>
-										{`${curIssue.reportedBy.firstName} ${
-											curIssue.reportedBy.lastName
+										<Link to={`/manage-issue/${_id}`}>
+											{title}
+										</Link>
+									</td>
+									<td>{status.name}</td>
+									<td>
+										{`${reportedBy.firstName} ${
+											reportedBy.lastName
 										}`}
+									</td>
+									<td>
+										{assignTo
+											? `${assignTo.firstName} ${
+													assignTo.lastName
+											  }`
+											: 'None'}
 									</td>
 									<td>
 										<button
 											onClick={e => {
 												e.stopPropagation();
-												this._onSoftDelete(
-													curIssue._id
-												);
+												archiveIssue(_id);
 											}}
-											disabled={
-												user == null ||
-												user._id !==
-													curIssue.reportedBy._id
-											}
+											disabled={userId !== reportedBy._id}
 										>
 											Archive
 										</button>
 
-										{user && user.admin ? (
+										{isAdmin ? (
 											<button
 												onClick={e => {
 													e.stopPropagation();
-													this._onHardDelete(
-														curIssue._id
-													);
+													deleteIssue(_id);
 												}}
 												disabled={
-													user == null ||
-													user._id !==
-														curIssue.reportedBy._id
+													userId !== reportedBy._id
 												}
 											>
 												Delete
@@ -90,89 +99,40 @@ class IssuePreview extends Component {
 		);
 	}
 
-	async _onHardDelete(id) {
-		try {
-			// send registration request
-			const response = await fetch('/api/issue', {
-				method: 'DELETE',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				},
-				body: JSON.stringify({
-					_id: id
-				})
-			});
-
-			if (response.on === false) {
-				this.setState({
-					message: 'Unable to delete issue, please try again later.'
-				});
-			}
-
-			this._fetchIssues(); // refresh issues
-		} catch (error) {
-			this.setState({
-				message: 'Unable to delete issue, please try again later.'
-			});
-		}
-	}
-
-	async _onSoftDelete(id) {
-		try {
-			// send registration request
-			const response = await fetch('/api/issue/archive', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				},
-				body: JSON.stringify({
-					_id: id
-				})
-			});
-
-			if (response.on === false) {
-				this.setState({
-					message: 'Unable to delete issue, please try again later.'
-				});
-			}
-
-			this._fetchIssues(); // refresh issues
-		} catch (error) {
-			this.setState({
-				message: 'Unable to delete issue, please try again later.'
-			});
-		}
-	}
-
-	_onSelect(id) {
-		this.props.history.push(`/manage-issue/${id}`);
-	}
-
-	async _fetchIssues() {
-		try {
-			// send registration request
-			const response = await fetch('/api/issues', {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json; charset=utf-8'
-				}
-			});
-
-			const responseBody = await response.json();
-
-			this.setState({
-				issues: responseBody
-			});
-		} catch (error) {
-			this.setState({
-				message: 'Unable to fetch issues, please try again later.'
-			});
-		}
-	}
-
 	componentDidMount() {
-		this._fetchIssues();
+		this.props.fetchIssues();
 	}
 }
 
-export default withRouter(IssuePreview);
+const mapStateToProps = state => {
+	const { init, issueData } = state;
+	const { isAdmin, user } = init;
+	const { issues, isLoading, result } = issueData;
+
+	return {
+		issues,
+		isAdmin,
+		isLoading,
+		userId: user ? user._id : null,
+		result
+	};
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		fetchIssues: () => {
+			dispatch(fetchIssues());
+		},
+		archiveIssue: issueId => {
+			dispatch(archiveIssue(issueId));
+		},
+		deleteIssue: issueId => {
+			dispatch(deleteIssue(issueId));
+		}
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(IssuePreview);

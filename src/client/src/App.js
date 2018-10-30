@@ -1,87 +1,92 @@
 import React, { Component } from 'react';
 import { BrowserRouter, Route, Link } from 'react-router-dom';
+import { connect } from 'react-redux';
 
-import HomePage from './view/pages/HomePage';
+import 'react-notifications/lib/notifications.css';
+
+import { fetchInit } from './actions/initActions';
+import { fetchAllStatus } from './actions/statusAction';
+import { fetchIssues } from './actions/issueActions';
+import IssuePreview from './view/issue/IssuePreview';
 import IssueForm from './view/issue/IssueForm';
+import UsersPreview from './view/users/UsersPreview';
 import RegisterView from './view/register/RegisterView';
 import LoginView from './view/login/LoginView';
 
 import './App.css';
 import LogoutView from './view/login/LogoutView';
 
-const isUserLoggedIn = user => user != null;
+const NavBar = ({ isLoggedIn, isAdmin }) => {
+	return (
+		<div>
+			<ul>
+				<li>
+					<Link to="/">Home</Link>
+				</li>
+
+				{isLoggedIn ? (
+					<li>
+						<Link to="/manage-issue">New issue</Link>
+					</li>
+				) : (
+					''
+				)}
+
+				{isAdmin ? (
+					<li>
+						<Link to="/users">Users</Link>
+					</li>
+				) : (
+					''
+				)}
+
+				{isLoggedIn === false ? (
+					<li>
+						<Link to="/register">Register</Link>
+					</li>
+				) : (
+					''
+				)}
+
+				{isLoggedIn === false ? (
+					<li>
+						<Link to="/login">Login</Link>
+					</li>
+				) : (
+					''
+				)}
+
+				{isLoggedIn ? (
+					<li>
+						<Link to="/logout">Logout</Link>
+					</li>
+				) : (
+					''
+				)}
+			</ul>
+		</div>
+	);
+};
 
 class App extends Component {
-	constructor(props) {
-		super(props);
-
-		this.state = {
-			isLoading: true,
-			user: null
-		};
-
-		this._onLogin = this._onLogin.bind(this);
-		this._onLogout = this._onLogout.bind(this);
-	}
-
 	render() {
-		const { isLoading, user } = this.state;
-
+		const { isLoading, isLoggedIn, isAdmin } = this.props;
 		return (
 			<div>
 				{isLoading ? (
 					<div>Loading, please wait...</div>
 				) : (
 					<BrowserRouter>
-						<div className="app">
-							<ul>
-								<li>
-									<Link to="/">Home</Link>
-								</li>
-
-								{user ? (
-									<li>
-										<Link to="/manage-issue">
-											New issue
-										</Link>
-									</li>
-								) : (
-									''
-								)}
-
-								{user == null ? (
-									<li>
-										<Link to="/register">Register</Link>
-									</li>
-								) : (
-									''
-								)}
-
-								{user == null ? (
-									<li>
-										<Link to="/login">Login</Link>
-									</li>
-								) : (
-									''
-								)}
-
-								{user ? (
-									<li>
-										<Link to="/logout">Logout</Link>
-									</li>
-								) : (
-									''
-								)}
-							</ul>
-
+						<div>
+							<NavBar isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
 							<Route
 								exact
 								path="/register"
 								render={() =>
-									isUserLoggedIn(user) === false ? (
+									isLoggedIn === false ? (
 										<RegisterView />
 									) : (
-										<HomePage user={user} />
+										<IssuePreview />
 									)
 								}
 							/>
@@ -89,10 +94,10 @@ class App extends Component {
 								exact
 								path="/login"
 								render={() =>
-									isUserLoggedIn(user) === false ? (
+									isLoggedIn === false ? (
 										<LoginView onLogin={this._onLogin} />
 									) : (
-										<HomePage user={user} />
+										<IssuePreview />
 									)
 								}
 							/>
@@ -102,10 +107,18 @@ class App extends Component {
 								path="/manage-issue/:id?"
 								render={({ match }) => {
 									const id = match.params.id;
-									return isUserLoggedIn(user) ? (
-										<IssueForm issueId={id} />
+									return <IssueForm issueId={id} />;
+								}}
+							/>
+
+							<Route
+								exact
+								path="/users"
+								render={() => {
+									return isLoggedIn ? (
+										<UsersPreview />
 									) : (
-										<HomePage user={user} />
+										<IssuePreview />
 									);
 								}}
 							/>
@@ -121,7 +134,7 @@ class App extends Component {
 							<Route
 								path="/"
 								render={() => {
-									return <HomePage user={user} />;
+									return <IssuePreview />;
 								}}
 								exact
 							/>
@@ -132,32 +145,28 @@ class App extends Component {
 		);
 	}
 
-	_onLogin(user) {
-		this.setState({
-			user
-		});
-	}
-
-	_onLogout() {
-		this.setState({
-			user: null
-		});
-	}
-
-	async componentDidMount() {
-		// send registration request
-		const response = await fetch('/api/init', {
-			method: 'GET'
-		});
-
-		const initData = await response.json();
-
-		console.log(initData.user);
-		this.setState({
-			isLoading: false,
-			user: initData.user
-		});
+	componentDidMount() {
+		this.props.init();
 	}
 }
 
-export default App;
+const mapStateToProps = state => {
+	const { init } = state;
+	const { isLoading, isAdmin, isLoggedIn } = init;
+	return { isLoading, isAdmin, isLoggedIn };
+};
+
+const mapDispatchToProps = dispatch => {
+	return {
+		init: () => {
+			dispatch(fetchInit());
+			dispatch(fetchAllStatus());
+			dispatch(fetchIssues());
+		}
+	};
+};
+
+export default connect(
+	mapStateToProps,
+	mapDispatchToProps
+)(App);
