@@ -7,12 +7,9 @@ import { saveIssue, assignIssue } from '../../actions/issueActions';
 class IssueForm extends Component {
 	constructor(props) {
 		super(props);
-
-		const { issue } = props;
-		const { _id, title, content, status } = issue;
+		const { title, content, status } = props.issue;
 
 		this.state = {
-			_id,
 			title,
 			content,
 			status
@@ -23,8 +20,21 @@ class IssueForm extends Component {
 		this._assignIssue = this._assignIssue.bind(this);
 	}
 
+	componentDidUpdate(prevProps) {
+		if (this.props.issue._id !== prevProps.issue._id) {
+			const { title, content, status } = this.props.issue;
+
+			this.setState({
+				title,
+				content,
+				status
+			});
+		}
+	}
+
 	render() {
-		const { _id, title, content, status } = this.state;
+		const { title, content, status } = this.state;
+
 		const {
 			statusCollection,
 			isDisabled,
@@ -32,9 +42,9 @@ class IssueForm extends Component {
 			result,
 			userId
 		} = this.props;
+		const { _id, assignTo, reportedBy } = issue;
 
-		const assignToDisabled =
-			userId === (issue && issue.assignTo ? issue.assignTo._id : null);
+		const assignToDisabled = userId === (assignTo ? assignTo._id : null);
 		// TODO client side validation
 		return (
 			<div>
@@ -78,8 +88,8 @@ class IssueForm extends Component {
 							<label>Create by: </label>
 							<input
 								type="text"
-								value={`${issue.reportedBy.firstName} ${
-									issue.reportedBy.lastName
+								value={`${reportedBy.firstName} ${
+									reportedBy.lastName
 								}`}
 								disabled={true}
 							/>
@@ -94,9 +104,9 @@ class IssueForm extends Component {
 							<input
 								type="text"
 								value={
-									issue.assignTo
-										? `${issue.assignTo.firstName} ${
-												issue.assignTo.lastName
+									assignTo
+										? `${assignTo.firstName} ${
+												assignTo.lastName
 										  }`
 										: 'None'
 								}
@@ -143,7 +153,7 @@ class IssueForm extends Component {
 	}
 
 	_assignIssue() {
-		const { _id } = this.state;
+		const { _id } = this.props.issue;
 
 		this.props.assignIssue(_id);
 	}
@@ -158,7 +168,8 @@ class IssueForm extends Component {
 	}
 
 	_onSubmit() {
-		const { _id, title, content, status } = this.state;
+		const { title, content, status } = this.state;
+		const { _id } = this.props.issue;
 
 		this.props.saveOrUpdateIssue({
 			_id,
@@ -183,7 +194,8 @@ const mapStateToProps = (state, ownProps) => {
 			_id: null,
 			title: '',
 			content: '',
-			status: status[0]
+			status: status[0],
+			reportedBy: {}
 		},
 		result,
 		userId: user ? user._id : ''

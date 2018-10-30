@@ -13,10 +13,17 @@ class UsersPreview extends Component {
 		const { users, user } = this.props;
 		const { result } = this.props;
 
+		const { error: errObj, message } = result;
+
+		const msg =
+			errObj && errObj.error === 'HAS_REPORTED_ISSUES'
+				? 'User have active tickets'
+				: message;
+
 		// TODO client side validation
 		return (
 			<div>
-				<Message {...result} />
+				<Message {...result} message={msg} />
 				<table>
 					<thead>
 						<tr>

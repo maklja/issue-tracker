@@ -111,9 +111,8 @@ export const deleteUser = id => {
 			});
 
 			if (response.ok === false) {
-				dispatch(
-					deleteUserFailed(new Error('Failed to delete account'))
-				);
+				const error = await response.json();
+				dispatch(deleteUserFailed(error));
 			} else {
 				dispatch(deleteUserDone(id));
 			}

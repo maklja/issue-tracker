@@ -69,7 +69,10 @@ class IssuePreview extends Component {
 												e.stopPropagation();
 												archiveIssue(_id);
 											}}
-											disabled={userId !== reportedBy._id}
+											disabled={
+												userId !== reportedBy._id &&
+												isAdmin === false
+											}
 										>
 											Archive
 										</button>
@@ -81,7 +84,8 @@ class IssuePreview extends Component {
 													deleteIssue(_id);
 												}}
 												disabled={
-													userId !== reportedBy._id
+													userId !== reportedBy._id &&
+													isAdmin === false
 												}
 											>
 												Delete

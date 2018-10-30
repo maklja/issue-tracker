@@ -105,7 +105,7 @@ export const archiveIssue = id => {
 					'Content-Type': 'application/json; charset=utf-8'
 				},
 				body: JSON.stringify({
-					_id: id
+					id
 				})
 			});
 
@@ -133,7 +133,7 @@ export const deleteIssue = id => {
 					'Content-Type': 'application/json; charset=utf-8'
 				},
 				body: JSON.stringify({
-					_id: id
+					id
 				})
 			});
 
@@ -163,7 +163,11 @@ export const saveIssue = issue => {
 				})
 			});
 			const responseBody = await response.json();
-			dispatch(saveIssueDone(responseBody));
+			if (response.ok) {
+				dispatch(saveIssueDone(responseBody));
+			} else {
+				dispatch(saveIssueFailed(responseBody));
+			}
 		} catch (err) {
 			dispatch(saveIssueFailed(err));
 		}

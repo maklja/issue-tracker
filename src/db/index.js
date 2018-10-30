@@ -7,7 +7,8 @@ const createConnection = url => {
 			url,
 			{
 				useNewUrlParser: true,
-				useCreateIndex: true
+				useCreateIndex: true,
+				useFindAndModify: false
 			}
 		);
 

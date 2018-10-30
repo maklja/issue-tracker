@@ -1,5 +1,6 @@
 const express = require('express');
 const ObjectID = require('mongodb').ObjectID;
+const { check, validationResult } = require('express-validator/check');
 
 const router = express.Router();
 const Issue = require('../model/Issue');
@@ -71,81 +72,108 @@ const getIssueQuery = () => {
 	];
 };
 
-router.post('/issue/assign', ensureAuthenticated, async (req, resp) => {
-	const { id } = req.body;
+router.post(
+	'/issue/assign',
+	ensureAuthenticated,
+	[
+		check('id')
+			.exists()
+			.isString()
+	],
+	async (req, resp) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return resp.status(422).json({ errors: errors.array() });
+		}
 
-	try {
-		await Issue.updateMany(
-			{ _id: id },
-			{
-				assignTo: req.user._id
-			}
-		);
+		const { id } = req.body;
 
-		const query = getIssueQuery();
-		query.unshift({ $match: { _id: ObjectID(id) } });
-		const issues = await Issue.aggregate(query).exec();
+		try {
+			await Issue.updateMany(
+				{ _id: id },
+				{
+					assignTo: req.user._id
+				}
+			);
 
-		resp.json(issues[0]);
-	} catch (error) {
-		// TODO log error
-		resp.status(500).json({
-			error: 'INTERNAL_ERROR'
-		});
+			const query = getIssueQuery();
+			query.unshift({ $match: { _id: ObjectID(id) } });
+			const issues = await Issue.aggregate(query).exec();
+
+			resp.json(issues[0]);
+		} catch (error) {
+			// TODO log error
+			resp.status(500).json({
+				error: 'INTERNAL_ERROR'
+			});
+		}
 	}
-});
+);
 
-router.delete('/issue', ensureIsAdmin, async (req, resp) => {
-	const { _id } = req.body;
+router.delete(
+	'/issue',
+	ensureIsAdmin,
+	[
+		check('id')
+			.exists()
+			.isString()
+	],
+	async (req, resp) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return resp.status(422).json({ errors: errors.array() });
+		}
 
-	try {
-		// do a hard delete only
-		await Issue.deleteOne({ _id });
+		const { id } = req.body;
 
-		resp.status(204).send();
-	} catch (error) {
-		// TODO log error
-		resp.status(500).json({
-			error: 'INTERNAL_ERROR'
-		});
+		try {
+			// do a hard delete only
+			await Issue.deleteOne({ _id: ObjectID(id) });
+
+			resp.status(204).send();
+		} catch (error) {
+			// TODO log error
+			resp.status(500).json({
+				error: 'INTERNAL_ERROR'
+			});
+		}
 	}
-});
+);
 
-router.post('/issue/archive', ensureAuthenticated, async (req, resp) => {
-	const { _id } = req.body;
+router.post(
+	'/issue/archive',
+	ensureAuthenticated,
+	[
+		check('id')
+			.exists()
+			.isString()
+	],
+	async (req, resp) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return resp.status(422).json({ errors: errors.array() });
+		}
 
-	try {
-		// do a soft delete only
-		await Issue.updateOne(
-			{ _id },
-			{
-				deleted: true
-			}
-		);
+		const { id } = req.body;
 
-		resp.status(204).send();
-	} catch (error) {
-		// TODO log error
-		resp.status(500).json({
-			error: 'INTERNAL_ERROR'
-		});
+		try {
+			// do a soft delete only
+			await Issue.updateOne(
+				{ _id: Object(id) },
+				{
+					deleted: true
+				}
+			);
+
+			resp.status(204).send();
+		} catch (error) {
+			// TODO log error
+			resp.status(500).json({
+				error: 'INTERNAL_ERROR'
+			});
+		}
 	}
-});
-
-router.get('/issue/:id', async (req, resp) => {
-	const issueId = req.params.id;
-
-	try {
-		const issue = await Issue.findById(issueId);
-
-		resp.json(issue);
-	} catch (error) {
-		// TODO log error
-		resp.status(500).json({
-			error: 'INTERNAL_ERROR'
-		});
-	}
-});
+);
 
 router.get('/issues', async (req, resp) => {
 	try {
@@ -167,55 +195,82 @@ router.get('/issues', async (req, resp) => {
 	}
 });
 
-router.post('/save-issue', ensureAuthenticated, async (req, resp) => {
-	const { _id, title, content, status: statusId } = req.body;
-
-	try {
-		const statusCollection = _id
-			? await Status.find({
-					// when we update document
-					_id: statusId
-			  }).exec()
-			: await Status.find() // when we create document set minimum status at the begin
-					.sort({ priority: 1 })
-					.limit(1)
-					.exec();
-
-		const status = statusCollection[0];
-
-		if (status == null) {
-			resp.status(400).json({
-				error: 'STATUS_NOT_FOUND'
-			});
-			return;
+router.post(
+	'/save-issue',
+	ensureAuthenticated,
+	[
+		check('title')
+			.isLength({ min: 1 })
+			.isString(),
+		check('content')
+			.isLength({ min: 1 })
+			.isString(),
+		check('statusId')
+			.optional()
+			.isString()
+	],
+	async (req, resp) => {
+		const errors = validationResult(req);
+		if (!errors.isEmpty()) {
+			return resp.status(422).json({ errors: errors.array() });
 		}
 
-		const issue = new Issue({
-			_id: _id || new ObjectID(),
-			title,
-			content,
-			status: status._id,
-			reportedBy: req.user._id // TODO security risk on update?
-		});
+		const { _id, title, content, status: statusId } = req.body;
 
-		await Issue.updateOne({ _id: issue._id }, issue, {
-			upsert: true
-		});
+		try {
+			const statusCollection = _id
+				? await Status.find({
+						// when we update document
+						_id: statusId
+				  }).exec()
+				: await Status.find() // when we create document set minimum status at the begin
+						.sort({ priority: 1 })
+						.limit(1)
+						.exec();
 
-		const query = getIssueQuery();
-		query.unshift(
-			// exclude ones that are deleted
-			{ $match: { _id: issue._id } }
-		);
-		const issues = await Issue.aggregate(query).exec();
+			const status = statusCollection[0];
 
-		resp.json(issues[0]);
-	} catch (error) {
-		// TODO log error
-		resp.status(500).json({
-			error: 'INTERNAL_ERROR'
-		});
+			if (status == null) {
+				resp.status(400).json({
+					error: 'STATUS_NOT_FOUND'
+				});
+				return;
+			}
+
+			const query = getIssueQuery();
+			if (_id) {
+				await Issue.findOneAndUpdate(
+					{ _id },
+					{
+						title,
+						content,
+						status: status._id
+					}
+				);
+				query.unshift({ $match: { _id: ObjectID(_id) } });
+			} else {
+				const issue = new Issue({
+					_id: new ObjectID(),
+					title,
+					content,
+					status: status._id,
+					reportedBy: req.user._id
+				});
+				await issue.save();
+
+				query.unshift({ $match: { _id: issue._id } });
+			}
+
+			const issues = await Issue.aggregate(query).exec();
+
+			resp.json(issues[0]);
+		} catch (error) {
+			// TODO log error
+			resp.status(500).json({
+				error: 'INTERNAL_ERROR'
+			});
+		}
 	}
-});
+);
 
 module.exports = router;
