@@ -24,7 +24,7 @@ npm run start
 
 This commands will run node server on port 4000.
 
-After that navigate to folder ~project root~/src/client and run commands:
+After that navigate to folder _project-root/src/client_ and run commands:
 
 ```
 npm install
@@ -34,6 +34,6 @@ npm run start
 Commands will install client dependencies and run dev server on port 3000.
 Dev server will proxy all request from client applcation to back-end server on port 4000.
 
-Access application using user http://localhost:3000/.
+Access application using URL http://localhost:3000/.
 
 Running application in production mode is not implemented.
