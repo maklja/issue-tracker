@@ -20,7 +20,6 @@ class UsersPreview extends Component {
 				? 'User have active tickets'
 				: message;
 
-		// TODO client side validation
 		return (
 			<div>
 				<Message {...result} message={msg} />

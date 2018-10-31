@@ -89,7 +89,7 @@ router.post(
 		const { id } = req.body;
 
 		try {
-			await Issue.updateMany(
+			await Issue.updateOne(
 				{ _id: id },
 				{
 					assignTo: req.user._id

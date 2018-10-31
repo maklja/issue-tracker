@@ -44,6 +44,7 @@ const fetchUsersFailed = error => {
 	return { type: FETCH_USERS_FAILED, error };
 };
 
+// async action for fetching all users
 export const fetchUsers = () => {
 	return async dispatch => {
 		try {
@@ -67,6 +68,7 @@ export const fetchUsers = () => {
 	};
 };
 
+// async action for user activation
 export const activateUser = userId => {
 	return async dispatch => {
 		try {
@@ -95,6 +97,7 @@ export const activateUser = userId => {
 	};
 };
 
+// async action for user delete
 export const deleteUser = id => {
 	return async dispatch => {
 		try {

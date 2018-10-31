@@ -25,13 +25,14 @@ const initState = {
 	result: {}
 };
 
+// init redux reducer
 export default (state = initState, action) => {
 	switch (action.type) {
 		case FETCH_INIT_START:
 			return {
 				...state,
 				isLoading: true,
-				error: null
+				result: {}
 			};
 		case FETCH_INIT_DONE:
 			const initData = action.initData;
@@ -49,7 +50,7 @@ export default (state = initState, action) => {
 				user: null,
 				isLoggedIn: false,
 				isAdmin: false,
-				error: action.error
+				result: { error: action.error }
 			};
 		case LOGOUT_DONE:
 		case LOGOUT_FAILED:

@@ -241,10 +241,9 @@ router.post(
 			// check if username is taken
 			const existingUser = await User.findOne({ username });
 			if (existingUser != null) {
-				resp.status(400).json({
+				return resp.status(400).json({
 					error: 'USERNAME_TAKEN'
 				});
-				return;
 			}
 
 			// create new user

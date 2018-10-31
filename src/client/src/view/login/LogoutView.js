@@ -1,11 +1,12 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 import { connect } from 'react-redux';
+import { Redirect } from 'react-router-dom';
 
 import { logout } from '../../actions/initActions';
 
 class LogoutView extends Component {
 	render() {
-		return '';
+		return <Redirect to="/login" />;
 	}
 
 	componentDidMount() {

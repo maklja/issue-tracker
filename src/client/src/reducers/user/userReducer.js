@@ -17,6 +17,7 @@ const initState = {
 	result: {}
 };
 
+// user reducer
 export default (state = initState, action) => {
 	switch (action.type) {
 		case FETCH_USERS_START:

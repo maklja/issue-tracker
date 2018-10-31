@@ -59,6 +59,7 @@ const fetchInitFailed = error => {
 	return { type: FETCH_INIT_FAILED, error };
 };
 
+// async action for fetching init parameters of application
 export const fetchInit = () => {
 	return async dispatch => {
 		try {
@@ -67,15 +68,21 @@ export const fetchInit = () => {
 			const response = await fetch('/api/init', {
 				method: 'GET'
 			});
+
 			const initData = await response.json();
 
-			dispatch(fetchInitDone(initData));
+			if (response.ok) {
+				dispatch(fetchInitDone(initData));
+			} else {
+				dispatch(fetchInitFailed(initData));
+			}
 		} catch (err) {
 			dispatch(fetchInitFailed(err));
 		}
 	};
 };
 
+// async action for logout
 export const logout = () => {
 	return async dispatch => {
 		try {
@@ -91,6 +98,7 @@ export const logout = () => {
 	};
 };
 
+// async action for login
 export const login = (username, password) => {
 	return async dispatch => {
 		try {
@@ -119,6 +127,7 @@ export const login = (username, password) => {
 	};
 };
 
+// async action for user registration
 export const register = user => {
 	return async dispatch => {
 		try {

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { BrowserRouter, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Route, Link, Redirect } from 'react-router-dom';
 import { connect } from 'react-redux';
 
 import 'react-notifications/lib/notifications.css';
@@ -12,11 +12,12 @@ import IssueForm from './view/issue/IssueForm';
 import UsersPreview from './view/users/UsersPreview';
 import RegisterView from './view/register/RegisterView';
 import LoginView from './view/login/LoginView';
+import StatusPreview from './view/status/StatusPreview';
+import StatusForm from './view/status/StatusForm';
 
-import './App.css';
 import LogoutView from './view/login/LogoutView';
 
-const NavBar = ({ isLoggedIn, isAdmin }) => {
+const NavBar = ({ isLoggedIn, isAdmin, user }) => {
 	return (
 		<div>
 			<ul>
@@ -24,9 +25,9 @@ const NavBar = ({ isLoggedIn, isAdmin }) => {
 					<Link to="/">Home</Link>
 				</li>
 
-				{isLoggedIn ? (
+				{isAdmin ? (
 					<li>
-						<Link to="/manage-issue">New issue</Link>
+						<Link to="/users">Users</Link>
 					</li>
 				) : (
 					''
@@ -34,7 +35,7 @@ const NavBar = ({ isLoggedIn, isAdmin }) => {
 
 				{isAdmin ? (
 					<li>
-						<Link to="/users">Users</Link>
+						<Link to="/status">Status</Link>
 					</li>
 				) : (
 					''
@@ -63,6 +64,14 @@ const NavBar = ({ isLoggedIn, isAdmin }) => {
 				) : (
 					''
 				)}
+
+				{isLoggedIn ? (
+					<li>
+						<Link to="/">{user.username}</Link>
+					</li>
+				) : (
+					''
+				)}
 			</ul>
 		</div>
 	);
@@ -70,7 +79,7 @@ const NavBar = ({ isLoggedIn, isAdmin }) => {
 
 class App extends Component {
 	render() {
-		const { isLoading, isLoggedIn, isAdmin } = this.props;
+		const { isLoading, isLoggedIn, isAdmin, user } = this.props;
 		return (
 			<div>
 				{isLoading ? (
@@ -78,7 +87,11 @@ class App extends Component {
 				) : (
 					<BrowserRouter>
 						<div>
-							<NavBar isLoggedIn={isLoggedIn} isAdmin={isAdmin} />
+							<NavBar
+								isLoggedIn={isLoggedIn}
+								isAdmin={isAdmin}
+								user={user}
+							/>
 							<Route
 								exact
 								path="/register"
@@ -86,7 +99,7 @@ class App extends Component {
 									isLoggedIn === false ? (
 										<RegisterView />
 									) : (
-										<IssuePreview />
+										<Redirect to="/" />
 									)
 								}
 							/>
@@ -97,7 +110,7 @@ class App extends Component {
 									isLoggedIn === false ? (
 										<LoginView onLogin={this._onLogin} />
 									) : (
-										<IssuePreview />
+										<Redirect to="/" />
 									)
 								}
 							/>
@@ -115,10 +128,36 @@ class App extends Component {
 								exact
 								path="/users"
 								render={() => {
-									return isLoggedIn ? (
+									return isAdmin ? (
 										<UsersPreview />
 									) : (
-										<IssuePreview />
+										<Redirect to="/login" />
+									);
+								}}
+							/>
+
+							<Route
+								exact
+								path="/status"
+								onEnter={this.requireAuth}
+								render={() => {
+									return isLoggedIn ? (
+										<StatusPreview />
+									) : (
+										<Redirect to="/login" />
+									);
+								}}
+							/>
+
+							<Route
+								exact
+								path="/manage-status/:id?"
+								render={({ match }) => {
+									const id = match.params.id;
+									return isLoggedIn ? (
+										<StatusForm statusId={id} />
+									) : (
+										<Redirect to="/login" />
 									);
 								}}
 							/>
@@ -152,8 +191,8 @@ class App extends Component {
 
 const mapStateToProps = state => {
 	const { init } = state;
-	const { isLoading, isAdmin, isLoggedIn } = init;
-	return { isLoading, isAdmin, isLoggedIn };
+	const { isLoading, isAdmin, isLoggedIn, user } = init;
+	return { isLoading, isAdmin, isLoggedIn, user };
 };
 
 const mapDispatchToProps = dispatch => {

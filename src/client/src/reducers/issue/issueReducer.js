@@ -25,6 +25,7 @@ const initState = {
 	result: {}
 };
 
+// ticket redux reducer
 export default (state = initState, action) => {
 	switch (action.type) {
 		case FETCH_ISSUES_START:

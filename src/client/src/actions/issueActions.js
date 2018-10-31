@@ -74,6 +74,7 @@ const deleteIssuesFailed = error => {
 	return { type: DELETE_ISSUE_FAILED, error };
 };
 
+// async action for fetching all tickets from server
 export const fetchIssues = () => {
 	return async dispatch => {
 		try {
@@ -94,6 +95,7 @@ export const fetchIssues = () => {
 	};
 };
 
+// async action for ticket soft delete
 export const archiveIssue = id => {
 	return async dispatch => {
 		try {
@@ -122,6 +124,7 @@ export const archiveIssue = id => {
 	};
 };
 
+// async action for ticket hard delete
 export const deleteIssue = id => {
 	return async dispatch => {
 		try {
@@ -148,6 +151,7 @@ export const deleteIssue = id => {
 	};
 };
 
+// async action for ticket save
 export const saveIssue = issue => {
 	return async dispatch => {
 		try {
@@ -174,6 +178,7 @@ export const saveIssue = issue => {
 	};
 };
 
+// async action for ticket async
 export const assignIssue = id => {
 	return async dispatch => {
 		try {

@@ -24,6 +24,9 @@ class IssuePreview extends Component {
 		return (
 			<div>
 				<Message {...result} />
+				<label>
+					<Link to="/manage-issue">New issue</Link>
+				</label>
 				<table>
 					<thead>
 						<tr>

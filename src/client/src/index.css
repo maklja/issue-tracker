@@ -12,6 +12,7 @@ body {
 }
 
 label {
+  margin: 0.225em 0;
   font-size: 1.8em;
   display: block;
 }
@@ -20,6 +21,7 @@ select,
 input[type=text],
 input[type=password],
 input[type=email],
+input[type=number],
 textarea {
   width: 100%;
   padding: 12px 20px;
